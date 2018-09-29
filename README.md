@@ -29,7 +29,7 @@ Ppl Info <tab> <name> [<tab-to-select-actions-or-enter-for-default>
 
 The easiest way to install Ppl is to use the [PackageControl](https://github.com/ueffel/Keypirinha-PackageControl) plugin's InstallPackage command. For manual installation simply download the ppl.keypirinha-package file from the Releases page of this repository to the Keypirinha\portable\Profile\InstalledPackages folder.
 
-Before using the plugin, you need to generate the contacts.json file - this is done automatically by the etc\make_contacts.py program. Please see that program for detailed instructions for how to use it. The process is a little involved because it currently cannot be done from Keypirinha.
+Before using the plugin, you need to generate the contacts.json file - this is done automatically by the etc\make_contacts.py program. Please see that program for detailed instructions for how to use it. The process is a little involved because it currently cannot be done from Keypirinha. A contacts.json-sample is provided in the etc folder of this repository - it can be copied to the Keypirinha's User folder as contacts.json to see how it works.
 
 ## Credits ##
 
