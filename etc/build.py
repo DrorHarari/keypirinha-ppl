@@ -4,7 +4,7 @@ import os
 import zipfile
 
 PACKAGE_NAME="Ppl"
-FILES=["ppl.py","ppl.ini","ppl.ico","LICENSE","etc/make_contacts.py"]
+FILES=["ppl.py","ppl.ini","ppl.ico","LICENSE","etc/make_contacts.py","etc/contacts.json-sample"]
 
 ETC_FOLDER=Path(__file__).parent
 PACKAGE_FOLDER=ETC_FOLDER.parent

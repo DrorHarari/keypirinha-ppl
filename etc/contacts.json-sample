@@ -1,0 +1,56 @@
+[
+    {
+        "company": "Acme Inc.",
+        "department": "Sales",
+        "description": "Sales Director",
+        "displayName": "Joe Sold",
+        "mail": "joe.sold@acme.com",
+        "mobile": "+1 (617) 111-2222",
+        "telephoneNumber": "+1 (617) 333 4444"
+    },
+    {
+        "company": "Acme Inc.",
+        "department": "Support",
+        "description": "Support Engineer",
+        "displayName": "Sue Comfort",
+        "mail": "sue.comfort@acme.com",
+        "mobile": "+1 (617) 111-2223",
+        "telephoneNumber": "+1 (617) 333 4445"
+    },
+    {
+        "company": "Acme Inc.",
+        "department": "Finance",
+        "description": "Controller",
+        "displayName": "Ari Costly",
+        "mail": "ari.costly@acme.com",
+        "mobile": "+1 (617) 111-2224",
+        "telephoneNumber": "+1 (617) 333 4446"
+    },
+    {
+        "company": "Acme Inc.",
+        "department": "Transport",
+        "description": "Driver",
+        "displayName": "Bob Tucker",
+        "mail": "bob.tucker@acme.com",
+        "mobile": "+1 (617) 111-2225",
+        "telephoneNumber": "+1 (617) 333 4447"
+    },
+    {
+        "company": "Acme Inc.",
+        "department": "R&D",
+        "description": "Developer",
+        "displayName": "Jack Dormant",
+        "mail": "jack.dormant@acme.com",
+        "mobile": "+1 (617) 111-2226",
+        "telephoneNumber": "+1 (617) 333 4448"
+    },
+    {
+        "company": "Acme Inc.",
+        "department": "R&D",
+        "description": "Architect",
+        "displayName": "Frankly Someting",
+        "mail": "frankly.someting@acme.com",
+        "mobile": "+1 (617) 111-2227",
+        "telephoneNumber": "+1 (617) 333 4449"
+    }
+]
