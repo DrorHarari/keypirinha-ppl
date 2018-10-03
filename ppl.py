@@ -133,25 +133,7 @@ class Ppl(kp.Plugin):
                     hit_hint = kp.ItemHitHint.NOARGS)
             for v in self.VERB_LIST
         ]
-        '''        
-        for name,measure in self.measures.items():
-            catalog.append(self.create_item(
-                category=kp.ItemCategory.REFERENCE,
-                label=self.ITEM_LABEL_PREFIX + measure["name"],
-                short_desc=measure["desc"],
-                target=measure["name"],
-                args_hint=kp.ItemArgsHint.REQUIRED,
-                hit_hint=kp.ItemHitHint.NOARGS))
 
-        if self.customized_config:
-            catalog.append(self.create_item(
-                category=self.ITEMCAT_RELOAD_DEFS,
-                label=self.ITEM_LABEL_PREFIX + "Reload definitions",
-                short_desc="Reload the custom definition file",
-                target=measure["name"],
-                args_hint=kp.ItemArgsHint.FORBIDDEN,
-                hit_hint=kp.ItemHitHint.NOARGS))
-        '''
         self.set_catalog(catalog)
        
     def on_suggest(self, user_input, items_chain):
@@ -196,7 +178,7 @@ class Ppl(kp.Plugin):
         if contact[self.AD_ATTR_MOBILE]:
             text += f"\nMobile#\t{contact[self.AD_ATTR_MOBILE]}"
         if contact[self.AD_ATTR_TITLE]:
-            text += f"\nTitle#\t{contact[self.AD_ATTR_TITLE]}"
+            text += f"\nTitle\t{contact[self.AD_ATTR_TITLE]}"
 
         kpu.set_clipboard(text)
 
