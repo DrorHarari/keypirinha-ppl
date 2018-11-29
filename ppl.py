@@ -140,8 +140,7 @@ class Ppl(kp.Plugin):
         if not items_chain or not user_input:
             return
 
-        current_item = items_chain[-1]
-        verb = self.VERBS[current_item.target()]
+        verb = self.VERBS[items_chain[0].target()]
         suggestions = []
 
         for idx, contact in enumerate(self.contacts):
@@ -163,9 +162,10 @@ class Ppl(kp.Plugin):
                 label=f'{verb.name} {contact[self.ID_ITEM]} - {contact[verb.item]}',
                 short_desc=f"{self.AD_ATTR_TITLE}",
                 target=item,
-                args_hint=kp.ItemArgsHint.REQUIRED,
+                args_hint=kp.ItemArgsHint.FORBIDDEN,
                 hit_hint=kp.ItemHitHint.IGNORE,
                 data_bag=kpu.kwargs_encode(verb=verb.target, contact_no=idx)))
+
         self.set_suggestions(suggestions, kp.Match.ANY, kp.Sort.NONE)
 
     def do_card_action(self, contact):
@@ -202,9 +202,9 @@ class Ppl(kp.Plugin):
         action_name = action.name() if action else verb.action
 
         if action_name == self.ACTION_CALL_MOBILE:
-            self.do_call_action(contact, verb)
+            self.do_call_action(contact, self.VERBS['CELL'])
         elif action_name == self.ACTION_CALL_PHONE:
-            self.do_call_action(contact, verb)
+            self.do_call_action(contact, self.VERBS['CALL'])
         elif action_name == self.ACTION_MAIL:
             self.do_mail_action(contact, verb)
         elif action_name == self.ACTION_CARD:
