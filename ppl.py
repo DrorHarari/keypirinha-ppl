@@ -21,7 +21,21 @@ class Verb(object):
         self.item = item
         self.category = category
         self.action = action
+
+class Contact(object):
+    displayName: str
+    mail: str
+    telephoneNumber: str
+    mobile: str
+    description: str
     
+    def __init__(self, displayName="", mail="", telephoneNumber="", mobile="", description=""):
+        self.displayName = displayName
+        self.mail = mail
+        self.telephoneNumber = telephoneNumber
+        self.mobile = mobile
+        self.description = description
+
 class Ppl(kp.Plugin):
     # Attributes in the contacts json doc
     AD_ATTR_NAME = 'displayName'
@@ -60,18 +74,58 @@ class Ppl(kp.Plugin):
     def __init__(self):
         super().__init__()
 
+    def load_vcard_file(self, vcf):
+        contact = None
+        for line in vcf:
+            if "BEGIN:VCARD\n" == line:
+                contact = {} #Contact()
+                contact[self.AD_ATTR_PHONE] = ""
+                contact[self.AD_ATTR_MOBILE] = ""
+                contact[self.AD_ATTR_MAIL] = ""
+                contact[self.AD_ATTR_TITLE] = ""
+                continue
+            elif "END:VCARD\n" == line:
+                self.contacts.append(contact)
+                contact = None
+                continue
+
+            parts = line.rsplit(':', 1)
+            if "FN" == parts[0]:
+                contact["displayName"] = parts[1]
+            elif parts[0].startswith("TEL;") and parts[0].endswith("CELL"):
+                contact[self.AD_ATTR_PHONE] = parts[1]
+            elif parts[0].startswith("TEL;") and parts[0].endswith("WORK"):
+                contact[self.AD_ATTR_MOBILE] = parts[1]
+            elif parts[0].startswith("EMAIL;"):
+                contact[self.AD_ATTR_MAIL] = parts[1]
+            elif parts[0].startswith("NICKNAME"):
+                contact[self.AD_ATTR_TITLE] += parts[1]
+            elif parts[0].startswith("NOTE"):
+                contact[self.AD_ATTR_TITLE] += parts[1]
+
     def load_contacts(self):
         self.contacts = []
+
         contacts_file = os.path.join(kp.user_config_dir(), self.CONTACTS_FILE)
         try:
-            
             if not os.path.exists(contacts_file):
                 self.error(f"Contacts file {contacts_file} does not exist. Functionality is disabled.")
             with open(contacts_file, "r") as f:
                 self.contacts = json.load(f)                 
         except Exception as exc:
-            self.warn(f"Failed to load contacts file {contacts_file}, {exc}")
-            return
+            self.err(f"Failed to load JSON contacts file {contacts_file}, {exc}")
+
+        vcard_files = self.settings.get_multiline("vcard_files", "main", ["sample.vcf"])            
+        for vcard_file in vcard_files:
+            vcard_file_path = os.path.join(kp.user_config_dir(), vcard_file)
+            try:
+                if not os.path.exists(vcard_file_path):
+                    self.err(f"Failed to load vCard file '{vcard_file_path}'. File does not exist")
+                    continue
+                with open(vcard_file_path, "r", encoding='utf-8') as f:
+                    self.load_vcard_file(f)
+            except Exception as exc:
+                self.err(f"Failed to load vCard (.vcf) file {vcard_file_path}, {exc}")
     
     def on_start(self):
         self.settings = self.load_settings()
