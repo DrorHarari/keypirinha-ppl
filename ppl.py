@@ -61,6 +61,8 @@ class Ppl(kp.Plugin):
     
     ID_ITEM = "displayName"
     
+    SAMPLE_VCF = "sample-contacts.vcf"
+    
     VERB_LIST = [
         Verb('Info', 'Contact info',            'INFO', AD_ATTR_PHONE, ITEMCAT_CONTACT, ACTION_CARD),
         Verb('Mail', 'Mail contact',            'MAIL', AD_ATTR_MAIL, ITEMCAT_MAILEE, ACTION_MAIL),
@@ -115,7 +117,20 @@ class Ppl(kp.Plugin):
         except Exception as exc:
             self.err(f"Failed to load JSON contacts file {contacts_file}, {exc}")
 
-        vcard_files = self.settings.get_multiline("vcard_files", "main", ["sample.vcf"])            
+        vcard_files = self.settings.get_multiline("vcard_files", "main", [])
+        
+        # Install a demo vCard file if non is configured (will be ignored once configured)
+        if len(vcard_files) == 0:
+            sample_vcf_path = os.path.join(kp.user_config_dir(), self.SAMPLE_VCF)
+            if not os.path.exists(sample_vcf_path):
+                sample_vcf_text = self.load_text_resource(self.SAMPLE_VCF).replace("\r\n","\n")
+                with open(sample_vcf_path, "w") as f:
+                    f.write(sample_vcf_text)
+                    f.close()
+            with open(sample_vcf_path, "r", encoding='utf-8') as f:
+                self.load_vcard_file(f)
+            return
+
         for vcard_file in vcard_files:
             vcard_file_path = os.path.join(kp.user_config_dir(), vcard_file)
             try:
