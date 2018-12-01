@@ -68,3 +68,6 @@ To use contacts from Microsoft Outlook which does not export multiple contacts t
 
 **V 0.1**
 - Initial release, rough around the edges.
+
+**V 0.4**
+- Initial public, pretty useful!
