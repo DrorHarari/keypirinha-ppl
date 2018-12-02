@@ -1,6 +1,6 @@
 Keypirinha Plugin: Ppl
 =========
-# Call, email and copy contact information with a few keystrokes
+# Easily call, email and copy contact information
 
 This plugin for Keypirinha lets you quickly call, email or look up details of your contacts from the Keypirinha launch box.
 
