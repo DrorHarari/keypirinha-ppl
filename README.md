@@ -60,14 +60,18 @@ vcard_files =
 ***Advanced***
 To use contacts from Microsoft Outlook which does not export multiple contacts to a .vcf file, there is a program make_contacts.py in the etc folder of the plugin which can automatically generate a contacts.json file that plugin can use. Please see that program for detailed instructions for how to use it. The process is currently a little involved and will be improved in a later version. The resulting contacts.json needs to be copied to Keypirinha's User folder.
 
-## Credits ##
+## Future ##
 
-* TBD
+There are many ideas to make Ppl better but it is very useful in its current form. Future enhancements may include:
+* Support Outlook csv contacts export format 
+* Support more contact entry fields
+* Support shared contacts file
+* ...
 
 ## Release Notes ##
 
 **V 0.1**
 - Initial release, rough around the edges.
 
-**V 0.4**
+**V 0.4.1**
 - Initial public, pretty useful!
