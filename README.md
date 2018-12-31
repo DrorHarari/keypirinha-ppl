@@ -36,6 +36,11 @@ Ppl Mail <tab> <name> [<tab-to-select-actions-or-enter-for-default>
 Ppl Info <tab> <name> [<tab-to-select-actions-or-enter-for-default>
 ```
 
+Note that due to Keypirinha's ability to learn from usage, in most cases it would be enough to just type the action followed by a tab, for example:
+```
+Call <tab> <name> [<tab-to-select-actions-or-enter-for-default>
+```
+
 ## Installation and Setup ##
 The easiest way to install Ppl is to use the [PackageControl](https://github.com/ueffel/Keypirinha-PackageControl) plugin's InstallPackage command. 
 
@@ -57,15 +62,16 @@ Then you need to configure the Ppl plugin and add the .vcf file to vcard_files i
 vcard_files =
     google.vcf
 ...
-	```
+```
 
-By default, Ppl uses the TEL: protocol for calling a phone number and the MAILTO: protocol to send emails. The call_protocol, cell_protocol and mail_protocol items in the Ppl configuration file can be used to select a different protocol handler. For example, to force cell calls to explicitly use Skype change the configuration as follow:
+The default protocol for calling a phone number is the TEL: protocol, and the default protocol for emailing is the MAILTO: protocol. The call_protocol, cell_protocol and mail_protocol items in the Ppl configuration file can be used to select a different protocol handler. For example, to force cell calls to explicitly use Skype change the configuration as follow:
+
 ```
 [main]
 ...
 cell_protocol = skype:%s
 ...
-	```
+```
 
 ***Advanced***
 To use contacts from Microsoft Outlook which does not export multiple contacts to a .vcf file, there is a program make_contacts.py in the etc folder of the plugin which can automatically generate a contacts.json file that plugin can use. Please see that program for detailed instructions for how to use it. The process is currently a little involved and will be improved in a later version. The resulting contacts.json needs to be copied to Keypirinha's User folder.
