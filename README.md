@@ -21,24 +21,24 @@ For manual installation simply download the cvt.keypirinha-package file from the
 
 Open the LaunchBox and type:
 ```
-Ppl Call <tab> <name> [<tab-to-select-actions-or-enter-for-default>
-```
-
-```
-Ppl Cell <tab> <name> [<tab-to-select-actions-or-enter-for-default>
-```
-
-```
-Ppl Mail <tab> <name> [<tab-to-select-actions-or-enter-for-default>
-```
-
-```
-Ppl Info <tab> <name> [<tab-to-select-actions-or-enter-for-default>
-```
-
-Note that due to Keypirinha's ability to learn from usage, in most cases it would be enough to just type the action followed by a tab, for example:
-```
 Call <tab> <name> [<tab-to-select-actions-or-enter-for-default>
+```
+
+```
+Cell <tab> <name> [<tab-to-select-actions-or-enter-for-default>
+```
+
+```
+Mail <tab> <name> [<tab-to-select-actions-or-enter-for-default>
+```
+
+```
+Info <tab> <name> [<tab-to-select-actions-or-enter-for-default>
+```
+
+In most cases it is be enough to just type the action followed by a tab and name. If typing the action name does not find it, you may need just one time to prefix it with Ppl: - for example:
+```
+Ppl: Call <tab> <name> [<tab-to-select-actions-or-enter-for-default>
 ```
 
 ## Installation and Setup ##
