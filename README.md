@@ -86,11 +86,11 @@ There are many ideas to make Ppl better but it is very useful in its current for
 
 ## Release Notes ##
 
-**V 0.2**
+**V0.5**
 - Support custom protocol handlers for calling and mailing.
 
-**V 0.1**
-- Initial release, rough around the edges.
-
-**V 0.4.1**
+**V0.4.1**
 - Initial public, pretty useful!
+
+**V0.1**
+- Initial release, rough around the edges.
