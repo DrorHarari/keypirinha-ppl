@@ -44,6 +44,10 @@ class Ppl(kp.Plugin):
     AD_ATTR_MOBILE = 'mobile'
     AD_ATTR_TITLE = 'description'
 
+    # Default protocol handlers
+    CALLING_PROTOCOL = "tel:%s"
+    MAILING_PROTOCOL = "mailto:%s"
+
     # Plugin actions
     ACTION_CALL_MOBILE = "call_mobile"
     ACTION_CALL_PHONE = "call_phone"
@@ -105,8 +109,12 @@ class Ppl(kp.Plugin):
             elif parts[0].startswith("NOTE"):
                 contact[self.AD_ATTR_TITLE] += parts[1]
 
-    def load_contacts(self):
+    def load_contacts_and_settings(self):
         self.contacts = []
+
+        self.call_protocol = self.settings.get_stripped("call_protocol", "main", self.CALLING_PROTOCOL)
+        self.cell_protocol = self.settings.get_stripped("cell_protocol", "main", self.CALLING_PROTOCOL)
+        self.mail_protocol = self.settings.get_stripped("mail_protocol", "main", self.MAILING_PROTOCOL)
 
         contacts_file = os.path.join(kp.user_config_dir(), self.CONTACTS_FILE)
         try:
@@ -145,7 +153,7 @@ class Ppl(kp.Plugin):
     def on_start(self):
         self.settings = self.load_settings()
         
-        self.load_contacts()
+        self.load_contacts_and_settings()
         
         call_mobile_action = self.create_action(
                 name=self.ACTION_CALL_MOBILE,
@@ -251,12 +259,12 @@ class Ppl(kp.Plugin):
 
         kpu.set_clipboard(text)
 
-    def do_call_action(self, contact, verb):
-        url = f"tel:{contact[verb.item]}".replace(" ", "")
+    def do_call_action(self, contact, verb, protocol):
+        url = protocol.replace("%s", contact[verb.item].replace(" ", ""))
         kpu.shell_execute(url, args='', working_dir='', verb='', try_runas=True, detect_nongui=True, api_flags=None, terminal_cmd=None, show=-1)
     
-    def do_mail_action(self, contact, verb):
-        url = f"mailto:{contact[verb.item]}"
+    def do_mail_action(self, contact, verb, protocol):
+        url = protocol.replace("%s", contact[verb.item].replace(" ", ""))
         kpu.shell_execute(url, args='', working_dir='', verb='', try_runas=True, detect_nongui=True, api_flags=None, terminal_cmd=None, show=-1)
     
     def on_execute(self, item, action):
@@ -271,11 +279,11 @@ class Ppl(kp.Plugin):
         action_name = action.name() if action else verb.action
 
         if action_name == self.ACTION_CALL_MOBILE:
-            self.do_call_action(contact, self.VERBS['CELL'])
+            self.do_call_action(contact, self.VERBS['CELL'], self.cell_protocol)
         elif action_name == self.ACTION_CALL_PHONE:
-            self.do_call_action(contact, self.VERBS['CALL'])
+            self.do_call_action(contact, self.VERBS['CALL'], self.call_protocol)
         elif action_name == self.ACTION_MAIL:
-            self.do_mail_action(contact, verb)
+            self.do_mail_action(contact, verb, self.mail_protocol)
         elif action_name == self.ACTION_CARD:
             self.do_card_action(contact)
         elif action_name == self.ACTION_COPY:
