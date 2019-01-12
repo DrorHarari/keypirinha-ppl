@@ -30,7 +30,6 @@
 # {finally you can delete the virtual environment}
 # $ cd ..
 # $ rmdir /s /q tempenv
-
 import win32com.client
 import io
 import sys
@@ -39,12 +38,12 @@ import json
 # Name of CN (common name) attributes for (in order):
 # full name, email address, company name, department name, title, phone#, mobile#
 CONTACT_AD_ATTRS = ["displayName", "mail", "company", "department", "description", "telephoneNumber", "mobile"]
+REQUIRED_ATTRS = ["mail", "telephoneNumber", "mobile"]
 
 # The Active Directory OU (organization unit) where the contacts are
 CONTACTS_OU = "OU=Employees"
 
 def add_cn(adobj, entries):
-    print(f"Adding {adobj.cn}")
     entry = {}
     for attr in CONTACT_AD_ATTRS:
         try:
@@ -52,7 +51,11 @@ def add_cn(adobj, entries):
         except Exception as exc:
             print(f"No attr {attr} for {adobj.cn}")
             pass
-    entries.append(entry)
+    for ra in REQUIRED_ATTRS:
+        if ra in entry and entry[ra] is not None:
+            print(f"Adding {adobj.cn}")
+            entries.append(entry)
+            return
 
 def scan_ou_s(ldap_path, entries):
     print(f"Scanning LDAP path: LDAP://{ldap_path}")
