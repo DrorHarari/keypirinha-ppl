@@ -88,7 +88,7 @@ There are many ideas to make Ppl better but it is very useful in its current for
 
 **V0.6**
 - Remove support for contacts.json
-- Support copying VCF from predefined remote source (e.g. shared VCF contacts file)
+- Support copying vCard from predefined remote source (e.g. shared VCF contacts file)
 - Add support for home phone numbers in VCF files
 
 **V0.5**
