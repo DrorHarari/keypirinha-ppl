@@ -52,19 +52,20 @@ For manual installation simply download the cvt.keypirinha-package file from the
 
 * `%APPDATA%\Keypirinha\InstalledPackages` in **Installed mode** 
 
-Ppl comes with a sample list of contacts (it is written to the user folder as sample-contacts.vcf) but to use the plugin, you'll need to export your contacts into a vCard format (a .vcf file) from Google Contacts or from another application. 
+Ppl comes with a sample list of contacts to play with (it is written to the user folder as sample-contacts.vcf) but to use the plugin, you'll need to export your contacts into a vCard format (a .vcf file) from Google Contacts or from another application add add it to the Ppl configuration file. 
 
-Then you need to configure the Ppl plugin and add the .vcf file to vcard_files item like in the following example (here we use google.vcf):
+In the following example, we add a company contacts vCard file from a shared location and a Google contact file from the User configuration directory.:
 
 ```
-[main]
 ...
-vcard_files =
-    google.vcf
+[vcf/company-contacts.vcf]
+source = \\fileserv\shared\company-contacts.vcf
+
+[vcf/my-google-contacts.vcf]
 ...
 ```
 
-The default protocol for calling a phone number is the TEL: protocol, and the default protocol for emailing is the MAILTO: protocol. The call_protocol, cell_protocol and mail_protocol items in the Ppl configuration file can be used to select a different protocol handler. For example, to force cell calls to explicitly use Skype change the configuration as follow:
+The default Windows Shell protocol for calling a phone number is the TEL: protocol, and the default protocol for emailing is the MAILTO: protocol. The call_protocol, cell_protocol and mail_protocol items in the Ppl configuration file can be used to select a different protocol handler. For example, to force cell calls to explicitly use Skype change the configuration as follow:
 
 ```
 [main]
@@ -81,10 +82,14 @@ To use contacts from Microsoft Outlook which does not export multiple contacts t
 There are many ideas to make Ppl better but it is very useful in its current form. Future enhancements may include:
 * Support Outlook csv contacts export format 
 * Support more contact entry fields
-* Support shared contacts file
 * ...
 
 ## Release Notes ##
+
+**V0.6**
+- Remove support for contacts.json
+- Support copying VCF from predefined remote source (e.g. shared VCF contacts file)
+- Add support for home phone numbers in VCF files
 
 **V0.5**
 - Support custom protocol handlers for calling and mailing.

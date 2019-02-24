@@ -1,5 +1,5 @@
 # Export contacts from an organization's Active Directory (AD) into a
-# contacts.json file that can be used with the Keypirinha plugin Ppl
+# VCF file contacts that can be used with the Keypirinha plugin Ppl
 # (see http://github.com/DrorHarari/keypirinha-ppl)
 #
 # Prerequisites:
@@ -27,7 +27,7 @@
 # $ pip install pywin32
 # {now you can run make_contacts.py}
 # {you may need to repeat after some edits...}
-# {finally you can delete the virtual environment}
+# {finally you can delete the virtual environment - unless you may want to repeat in future}
 # $ cd ..
 # $ rmdir /s /q tempenv
 import win32com.client
@@ -35,29 +35,58 @@ import io
 import sys
 import json
 
-# Name of CN (common name) attributes for (in order):
-# full name, email address, company name, department name, title, phone#, mobile#
-CONTACT_AD_ATTRS = ["displayName", "mail", "company", "department", "description", "telephoneNumber", "mobile"]
-REQUIRED_ATTRS = ["mail", "telephoneNumber", "mobile"]
+# Name of the VCF file created out of the AD entries
+VCF_FILE = "ad-contacts.vcf"
 
 # The Active Directory OU (organization unit) where the contacts are
+# This may change between organizations 
 CONTACTS_OU = "OU=Employees"
 
+# Map between CN (common name) attributes (in order) and the equivalent VCF properties:
+# (repeated occurances of the same VCF attribute are concatenated with the delimiter ;
+AD_ATTR_MAP = {
+    "displayName": "FN",
+    "mail": "EMAIL;TYPE=INTERNET;TYPE=WORK",
+    "company": "item1.ORG",
+    "department": "item1.ORG",
+    "title": "TITLE",
+    "telephoneNumber": "TEL;TYPE=WORK",
+    "mobile": "TEL;TYPE=CELL"
+}
+
+REQUIRED_ATTRS = ["mail", "telephoneNumber", "mobile"]
+
+VCF_ESCAPES = str.maketrans({
+    ",":    r"\,", 
+    ";": r"\;", 
+    "\\":   r"\\", 
+    "\n":   r"\\n"})
+
 def add_cn(adobj, entries):
+    n_required = 0
     entry = {}
-    for attr in CONTACT_AD_ATTRS:
+    for attr in AD_ATTR_MAP.keys():
         try:
-            entry[attr] = getattr(adobj,attr)
+            val = getattr(adobj,attr)
+            if val != None:
+                val = val.translate(VCF_ESCAPES)
+                if AD_ATTR_MAP[attr] in entry:
+                    entry[AD_ATTR_MAP[attr]] += ";"+val
+                else:
+                    entry[AD_ATTR_MAP[attr]] = val
         except Exception as exc:
             print(f"No attr {attr} for {adobj.cn}")
             pass
-    for ra in REQUIRED_ATTRS:
-        if ra in entry and entry[ra] is not None:
-            print(f"Adding {adobj.cn}")
-            entries.append(entry)
-            return
+            
+        if attr in REQUIRED_ATTRS:
+            n_required += 1
+
+    if n_required == len(REQUIRED_ATTRS):
+        print(f"Adding {adobj.cn}")
+        entries.append(entry)
 
 def scan_ou_s(ldap_path, entries):
+    global cnt
     print(f"Scanning LDAP path: LDAP://{ldap_path}")
     for o in win32com.client.GetObject(f"LDAP://{ldap_path}"):
         if o.cn == 'Active Directory Connections':
@@ -82,8 +111,12 @@ scan_loc = ",".join([CONTACTS_OU, ldap_loc])
 scan_ou_s(scan_loc, entries)
 
 print(f"Writing contacts to : contacts.json")
-with io.open('contacts.json', 'w', encoding='utf8') as outfile:
-    contacts = json.dumps(entries,
-                      indent=4, sort_keys=True,
-                      separators=(',', ': '), ensure_ascii=False)
-    outfile.write(contacts)
+with io.open(VCF_FILE, 'w', encoding='utf8') as outfile:
+    for entry in entries:
+        outfile.write(f"BEGIN:VCARD\n")
+        outfile.write(f"VERSION:3.0\n")
+        for item in entry:
+            outfile.write(f"{item}:{entry[item]}\n")   
+        outfile.write(f"END:VCARD\n")
+
+print(f"Done")
