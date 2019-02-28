@@ -119,9 +119,9 @@ class Ppl(kp.Plugin):
             parts = line.rsplit(':', 1)
             if "FN" == parts[0]:
                 contact["displayName"] = parts[1]
-            elif parts[0].startswith("TEL;") and parts[0].endswith("CELL"):
-                contact[self.AD_ATTR_PHONE] = parts[1]
             elif parts[0].startswith("TEL;") and parts[0].endswith("WORK"):
+                contact[self.AD_ATTR_PHONE] = parts[1]
+            elif parts[0].startswith("TEL;") and parts[0].endswith("CELL"):
                 contact[self.AD_ATTR_MOBILE] = parts[1]
             elif parts[0].startswith("TEL;") and parts[0].endswith("HOME"):
                 contact[self.AD_ATTR_HOME] = parts[1]

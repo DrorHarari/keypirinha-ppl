@@ -32,8 +32,11 @@
 # $ rmdir /s /q tempenv
 import win32com.client
 import io
+import os
 import sys
 import json
+import datetime
+import shutil
 
 # Name of the VCF file created out of the AD entries
 VCF_FILE = "ad-contacts.vcf"
@@ -110,13 +113,44 @@ entries = []
 scan_loc = ",".join([CONTACTS_OU, ldap_loc])
 scan_ou_s(scan_loc, entries)
 
-print(f"Writing contacts to : contacts.json")
-with io.open(VCF_FILE, 'w', encoding='utf8') as outfile:
-    for entry in entries:
-        outfile.write(f"BEGIN:VCARD\n")
-        outfile.write(f"VERSION:3.0\n")
-        for item in entry:
-            outfile.write(f"{item}:{entry[item]}\n")   
-        outfile.write(f"END:VCARD\n")
+vcf_file = sys.argv[1] if len(sys.argv) > 1 else VCF_FILE
+new_vcf_file = f"{vcf_file}-{str(datetime.datetime.now()).replace(' ','T').replace(':','.')}"
+
+print(f"Writing contacts to {new_vcf_file}")
+try:
+    with io.open(new_vcf_file, 'w', encoding='utf8') as outfile:
+        for entry in entries:
+            outfile.write(f"BEGIN:VCARD\n")
+            outfile.write(f"VERSION:3.0\n")
+            for item in entry:
+                outfile.write(f"{item}:{entry[item]}\n")   
+            outfile.write(f"END:VCARD\n")
+except Exception as exc:
+    print(f"Failed to write new contact list {new_vcf_file}. {exc}")
+    sys.exit(2)
+
+print("Checking for new contact data")
+try:
+    with io.open(vcf_file, 'r') as old_file:
+        old_data = old_file.readlines()
+    with io.open(new_vcf_file, 'r') as new_file:
+        new_data = new_file.readlines()
+except Exception as exc:
+    print(f"Failed to compare old and new contact list. {exc}")
+    sys.exit(3)
+
+if old_data == new_data:
+    print(f"No contact changes found. No change performed.")
+    try:
+        os.remove(new_vcf_file)
+    except:
+        pass
+    sys.exit(0)
+else:
+    try:
+        shutil.copy(new_vcf_file, vcf_file)
+    except Exception as exc:
+        print(f"Failed to copy {new_vcf_file} over {vcf_file}. {exc}")
+        sys.exit(2)
 
 print(f"Done")
