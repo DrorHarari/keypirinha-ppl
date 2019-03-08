@@ -2,9 +2,10 @@
 from pathlib import Path
 import os
 import zipfile
+import msvcrt
 
 PACKAGE_NAME="Ppl"
-FILES=["ppl.py","ppl.ini","ppl.ico","LICENSE","sample-contacts.vcf", "etc/make_contacts.py","etc/contacts.json-sample"]
+FILES=["ppl.py","ppl.ini","ppl.ico","LICENSE", "etc/make_contacts.py","etc/sample-contacts.vcf"]
 
 ETC_FOLDER=Path(__file__).parent
 PACKAGE_FOLDER=ETC_FOLDER.parent
@@ -19,7 +20,12 @@ try:
 
     zf.close()
 except Exception as exc:
+    # Package is corrupted - better delete it
+    if zf:
+        zf.close()
+        os.remove(PACKAGE_FILE)
     print(f"Failed to create package {PACKAGE_NAME}. {exc}")
+    msvcrt.getch()
     os._exit(1)
 
 print(f"Done")

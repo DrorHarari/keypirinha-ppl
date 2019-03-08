@@ -83,7 +83,8 @@ class Ppl(kp.Plugin):
     
     ID_ITEM = "displayName"
     
-    SAMPLE_VCF = "sample-contacts.vcf"
+    SAMPLE_VCF = r"sample-contacts.vcf"
+    PACKAGED_SAMPLE_VCF = r"etc\sample-contacts.vcf"
     VCF_SECTION_PREFIX = "vcf/"
     
     VERB_LIST = [
@@ -165,7 +166,7 @@ class Ppl(kp.Plugin):
         if len(self.vcard_files) == 0:
             sample_vcf_path = os.path.join(kp.user_config_dir(), self.SAMPLE_VCF)
             if not os.path.exists(sample_vcf_path):
-                sample_vcf_text = self.load_text_resource(self.SAMPLE_VCF).replace("\r\n","\n")
+                sample_vcf_text = self.load_text_resource(self.PACKAGED_SAMPLE_VCF).replace("\r\n","\n")
                 with open(sample_vcf_path, "w") as f:
                     f.write(sample_vcf_text)
                     f.close()
