@@ -1,0 +1,42 @@
+EMAIL	HOME	EMAIL;TYPE=INTERNET;TYPE=HOME:
+EMAIL	WORK	EMAIL;TYPE=INTERNET;TYPE=WORK:
+EMAIL	OTHER	item1.EMAIL;TYPE=INTERNET:dot.gofer@alberti.com
+EMAIL	OTHER	item1.EMAIL;TYPE=INTERNET:dot.gofer@yahoo.com
+CUSTOM	LABEL	item1.X-ABLabel:Info
+PHONE	CELL	TEL;TYPE=CELL:+952 52-526-7463
+PHONE	WORK	TEL;TYPE=WORK:1-700-701-011
+PHONE	HOME	TEL;TYPE=HOME:1-700-701-011
+PHONE	MAIN	TEL;TYPE=MAIN:04-631-6124
+PHONE	OTHER	item1.TEL:+972 71-801-3624
+CUSTOM	LABEL	item1.X-ABLabel:Fax
+ADDRESS	HOME	ADR;TYPE=HOME:;www.shfah.org;;;;;
+ADDRESS	WORK	ADR;TYPE=WORK:;;13 Remez;Tirya;;;SPain
+INFO	FULNAME	FN:Mena Boki
+INFO	NAME	N:Boki;Mena;;;
+INFO	NICKNAME	NICKNAME:Mena
+INFO	TITLE	item2.TITLE:Advanced R&D Manager
+INFO	NOTE	NOTE:Gender: Male
+INFO	BDAY	BDAY:19751021
+INFO	ORG	item1.ORG:ORG:ABC\, Inc.;North American Division;Marketing
+INFO	PHONETICFIRST	X-PHONETIC-FIRST-NAME:
+INFO	PHONETICLAST	X-PHONETIC-LAST-NAME:עדי
+WEB	URL	URL:www.pc-shop.co.uk
+WEB	PHOTO	PHOTO:https://lh5.googleusercontent.com/-BSq0Rxey3_Q/WLkgYjWx2HI/AAAAAAA
+
+
+
+Person class:
+name
+email[]
+phone[]
+address[]
+info[]
+
+web[]
+
+Entry starts with BEGIN:VCARD
+
+Split line start-till-first-colon => key
+Rest of line: value
+
+Entry ends with BEGIN:VCARD
