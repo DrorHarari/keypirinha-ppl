@@ -7,18 +7,6 @@ This plugin for Keypirinha lets you quickly call, email or look up details of yo
 The Ppl plugin (pronounced like people) supports the vCard file format for contacts as can be exported, for example, from Google Contacts.
 
 ## Usage ##
-Make sure to install Keypirinha from http://keypirinha.com/
-
-The easiest way to install Cvt is to use the [PackageControl](https://github.com/ueffel/Keypirinha-PackageControl) plugin's InstallPackage command. 
-
-For manual installation simply download the cvt.keypirinha-package file from the Releases page of this repository to:
-
-* `Keypirinha\portable\Profile\InstalledPackages` in **Portable mode**
-
-**Or** 
-
-* `%APPDATA%\Keypirinha\InstalledPackages` in **Installed mode** 
-
 Open the LaunchBox and type:
 ```
 Call <tab> <name> [<tab-to-select-actions-or-enter-for-default>
@@ -42,9 +30,11 @@ Ppl: Call <tab> <name> [<tab-to-select-actions-or-enter-for-default>
 ```
 
 ## Installation and Setup ##
+Make sure to install Keypirinha from http://keypirinha.com/
+
 The easiest way to install Ppl is to use the [PackageControl](https://github.com/ueffel/Keypirinha-PackageControl) plugin's InstallPackage command. 
 
-For manual installation simply download the cvt.keypirinha-package file from the Releases page of this repository to:
+For manual installation simply download the ppl.keypirinha-package file from the Releases page of this repository to:
 
 * `Keypirinha\portable\Profile\InstalledPackages` in **Portable mode**
 
