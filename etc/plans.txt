@@ -1,3 +1,12 @@
+- have google.vcf auto-configured if exists
+- re-orient ppl work around person first, operation later as default selection
+Include comtypes using:
+ we bundle site-packages with our key pirinha plug-in as follows:
+
+import site, os
+site.addsitedir(os.path.join(os.path.dirname(__file__), 'site-packages'))
+
+
 EMAIL	HOME	EMAIL;TYPE=INTERNET;TYPE=HOME:
 EMAIL	WORK	EMAIL;TYPE=INTERNET;TYPE=WORK:
 EMAIL	OTHER	item1.EMAIL;TYPE=INTERNET:dot.gofer@alberti.com
