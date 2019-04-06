@@ -7,6 +7,8 @@ import os
 import sys
 import datetime
 from shutil import copyfile
+from typing import Dict, Tuple, Sequence
+import contact
 
 class Verb(object):
     name: str
@@ -25,20 +27,24 @@ class Verb(object):
         self.action = action
 
 class Contact(object):
-    displayName: str
-    mail: str
-    telephoneNumber: str
-    mobile: str
-    description: str
-    home: str
+    name: str
+    title: str
+    organization: str
+    note: str
+    mailboxes: Dict[str,str]
+    phones: Dict[str,str]
+    addresses: Dict[str,str]
+    birthday: datetime.datetime
     
-    def __init__(self, displayName="", mail="", telephoneNumber="", mobile="", description="", home=""):
-        self.displayName = displayName
-        self.mail = mail
-        self.telephoneNumber = telephoneNumber
-        self.mobile = mobile
-        self.description = description
-        self.home = home
+    def __init__(self):
+        self.name = ""
+        self.title = ""
+        self.organization = ""
+        self.note = ""
+        self.mailboxes = {}
+        self.phones = {}
+        self.addresses = {}
+        self.birthday = None
 
 class VcfFile(object):
     filename: str
@@ -53,7 +59,7 @@ class VcfFile(object):
         
 class Ppl(kp.Plugin):
     # Attributes in the contacts json doc
-    AD_ATTR_NAME = 'displayName'
+    AD_ATTR_NAME = 'name'
     AD_ATTR_MAIL = 'mail'
     AD_ATTR_PHONE = 'telephoneNumber'
     AD_ATTR_MOBILE = 'mobile'
@@ -81,7 +87,7 @@ class Ppl(kp.Plugin):
 
     ITEM_LABEL_PREFIX = "Ppl: "
     
-    ID_ITEM = "displayName"
+    ID_ITEM = "name"
     
     SAMPLE_VCF = r"sample-contacts.vcf"
     PACKAGED_SAMPLE_VCF = r"etc\sample-contacts.vcf"
@@ -122,7 +128,7 @@ class Ppl(kp.Plugin):
 
                 parts = line.strip().rsplit(':', 1)
                 if "FN" == parts[0]:
-                    contact["displayName"] = parts[1]
+                    contact["name"] = parts[1]
                 elif parts[0].startswith("TEL;") and parts[0].endswith("WORK"):
                     contact[self.AD_ATTR_PHONE] = parts[1]
                 elif parts[0].startswith("TEL;") and parts[0].endswith("CELL"):

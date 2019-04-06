@@ -6,6 +6,35 @@ Include comtypes using:
 import site, os
 site.addsitedir(os.path.join(os.path.dirname(__file__), 'site-packages'))
 
+BEGIN:VCARD
+VERSION:3.0
+N:Harari;Dror;;;
+NICKNAME:Drorchuk
+TITLE:CTO
+ORG:ORG:Attunity\, Inc.;Israel Division;R&D
+item2.TITLE:Chief Sparrow
+item2.X-ABLabel:Avatar
+NOTE:Gender: Male
+BDAY:19751021
+item1.ORG:ORG:ABC\, Inc.;North American Division;Marketing
+item2.X-ABLabel:Fake
+X-PHONETIC-FIRST-NAME:דרור
+X-PHONETIC-LAST-NAME:הררי
+URL:www.attunity.com
+ADR;TYPE=HOME:;www.shfah.org;;;;;
+ADR;TYPE=WORK:;;13 Remez;Tirya;;;Spain
+TEL;TYPE=CELL:+952 52-526-7463
+TEL;TYPE=WORK:1-700-701-011
+TEL;TYPE=HOME:1-700-701-011
+TEL;TYPE=MAIN:04-631-6124
+item1.TEL:+972 71-801-3624
+item1.X-ABLabel:Fax
+EMAIL;TYPE=INTERNET;TYPE=HOME:
+EMAIL;TYPE=INTERNET;TYPE=WORK:
+item1.EMAIL;TYPE=INTERNET:dot.gofer@alberti.com
+item1.X-ABLabel:Home
+END:VCARD
+
 
 EMAIL	HOME	EMAIL;TYPE=INTERNET;TYPE=HOME:
 EMAIL	WORK	EMAIL;TYPE=INTERNET;TYPE=WORK:
