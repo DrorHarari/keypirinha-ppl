@@ -24,7 +24,7 @@ Mail <tab> <name> [<tab-to-select-actions-or-enter-for-default>
 Info <tab> <name> [<tab-to-select-actions-or-enter-for-default>
 ```
 
-In most cases it is be enough to just type the action followed by a tab and name. If typing the action name does not find it, you may need just one time to prefix it with Ppl: - for example:
+In most cases it is enough to just type the action followed by a tab and name. If typing the action name does not find it, you may need just one time to prefix it with Ppl: - for example:
 ```
 Ppl: Call <tab> <name> [<tab-to-select-actions-or-enter-for-default>
 ```
@@ -42,9 +42,9 @@ For manual installation simply download the ppl.keypirinha-package file from the
 
 * `%APPDATA%\Keypirinha\InstalledPackages` in **Installed mode** 
 
-Ppl comes with a sample list of contacts to play with (it is written to the user folder as sample-contacts.vcf) but to use the plugin, you'll need to export your contacts into a vCard format (a .vcf file) from Google Contacts or from another application add add it to the Ppl configuration file. 
+Ppl comes with a sample contacts file to play with (it is written to the user folder as sample-contacts.vcf) but to use the plugin, you'll need to export your contacts into a vCard format (a .vcf file) from Google Contacts or from another application add add it to the Ppl configuration file. 
 
-In the following example, we add a company contacts vCard file from a shared location and a Google contact file from the User configuration directory.:
+In the following example, we add a company contacts vCard file from a shared location and a Google contact file from the User configuration directory:
 
 ```
 ...
@@ -55,7 +55,7 @@ source = \\fileserv\shared\company-contacts.vcf
 ...
 ```
 
-The default Windows Shell protocol for calling a phone number is the TEL: protocol, and the default protocol for emailing is the MAILTO: protocol. The call_protocol, cell_protocol and mail_protocol items in the Ppl configuration file can be used to select a different protocol handler. For example, to force cell calls to explicitly use Skype change the configuration as follow:
+The default Windows Shell protocol for calling a phone number is the TEL: protocol, and the default protocol for emailing is the MAILTO: protocol. The call_protocol and mail_protocol items in the Ppl configuration file can be used to select a different protocol handler. For example, to force cell calls to explicitly use Skype change the configuration as follow:
 
 ```
 [main]
@@ -69,7 +69,7 @@ To use contacts from Microsoft Outlook which does not export multiple contacts t
 
 ## Future ##
 
-There are many ideas to make Ppl better but it is very useful in its current form. Future enhancements may include:
+There are many ideas to make Ppl better but it is already very useful in its current form. Future enhancements may include:
 * Support Outlook csv contacts export format 
 * Support more contact entry fields
 * ...
