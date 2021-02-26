@@ -1,44 +1,41 @@
+#TODO - generalize actions to make it capture different email & phone types
 import keypirinha as kp
 import keypirinha_util as kpu
 import json
-import re
+#import re
 from pathlib import Path
 import os
 import sys
 import datetime
 from shutil import copyfile
 
+# Main actions
+# {CALL|HOME|CELL|WORK} - dial a phone of given contact name (for CALL defaults to first number in contact)
+# EMAIL - send an email to a given contact name
+# INFO - copy contact card information of a given contact name
+
+
 class Verb(object):
     name: str
     desc: str
-    target: str
-    item: str
-    category: object
-    action: object
+    contact_field: str
+    action: str
     
-    def __init__(self, name, desc, target, item, category, action):
+    def __init__(self, name, desc, contact_field, action):
         self.name = name
         self.desc = desc
-        self.target = target
-        self.item = item
-        self.category = category
+        self.contact_field = contact_field
         self.action = action
 
 class Contact(object):
-    displayName: str
+    name: str
     mail: str
-    telephoneNumber: str
-    mobile: str
     description: str
-    home: str
     
-    def __init__(self, displayName="", mail="", telephoneNumber="", mobile="", description="", home=""):
-        self.displayName = displayName
+    def __init__(self, name="", mail="", description=""):
+        self.name = name
         self.mail = mail
-        self.telephoneNumber = telephoneNumber
-        self.mobile = mobile
         self.description = description
-        self.home = home
 
 class VcfFile(object):
     filename: str
@@ -52,11 +49,13 @@ class VcfFile(object):
         self.reload_delta = reload_delta
         
 class Ppl(kp.Plugin):
+    #vcf_tel_parser = re.compile(r'^TEL;TYPE=(?P<type>[a-zA-Z][a-zA-Z0-9]*)$')
+
     # Attributes in the contacts json doc
-    AD_ATTR_NAME = 'displayName'
+    AD_ATTR_NAME = 'name'
     AD_ATTR_MAIL = 'mail'
-    AD_ATTR_PHONE = 'telephoneNumber'
-    AD_ATTR_MOBILE = 'mobile'
+    AD_ATTR_PHONE = 'call'
+    AD_ATTR_CELL = 'cell'
     AD_ATTR_HOME = 'home'
     AD_ATTR_TITLE = 'description'
 
@@ -65,36 +64,34 @@ class Ppl(kp.Plugin):
     MAILING_PROTOCOL = "mailto:%s"
 
     # Plugin actions
-    ACTION_CALL_MOBILE = "call_mobile"
-    ACTION_CALL_PHONE = "call_phone"
-    ACTION_CALL_HOME = "call_home"
+    ACTION_CALL = "call"
     ACTION_MAIL = "mail"
     ACTION_CARD = "card"
     ACTION_COPY = "copy"
     
-    ITEMCAT_CALLEE_M = kp.ItemCategory.USER_BASE + 1
-    ITEMCAT_CALLEE_P = kp.ItemCategory.USER_BASE + 2
-    ITEMCAT_CALLEE_H = kp.ItemCategory.USER_BASE + 3
-    ITEMCAT_MAILEE = kp.ItemCategory.USER_BASE + 4
-    ITEMCAT_CONTACT = kp.ItemCategory.USER_BASE + 5
-    ITEMCATS = (ITEMCAT_CALLEE_M, ITEMCAT_CALLEE_P,  ITEMCAT_CALLEE_H, ITEMCAT_MAILEE, ITEMCAT_CONTACT)
+    # Plugin specific item categories
+    ITEMCAT_CONTACT = kp.ItemCategory.USER_BASE + 1
+    ITEMCAT_ACTION = kp.ItemCategory.USER_BASE + 2
+    ITEMCAT_COPY = kp.ItemCategory.USER_BASE + 3
 
     ITEM_LABEL_PREFIX = "Ppl: "
     
-    ID_ITEM = "displayName"
+    ID_NAME = "name"
     
     SAMPLE_VCF = r"sample-contacts.vcf"
     PACKAGED_SAMPLE_VCF = r"etc\sample-contacts.vcf"
     VCF_SECTION_PREFIX = "vcf/"
     
+    COPY_VERB = Verb('Copy',   'Copy contact detail',     '',  ACTION_COPY)
     VERB_LIST = [
-        Verb('Info', 'Contact info',            'INFO', AD_ATTR_PHONE, ITEMCAT_CONTACT, ACTION_CARD),
-        Verb('Mail', 'Mail contact',            'MAIL', AD_ATTR_MAIL, ITEMCAT_MAILEE, ACTION_MAIL),
-        Verb('Call', 'Call contact on phone',   'CALL', AD_ATTR_PHONE, ITEMCAT_CALLEE_P, ACTION_CALL_PHONE),
-        Verb('Cell', 'Call contact on mobile',  'CELL', AD_ATTR_MOBILE, ITEMCAT_CALLEE_M, ACTION_CALL_MOBILE),
-        Verb('Home', 'Call contact home',       'HOME', AD_ATTR_HOME, ITEMCAT_CALLEE_H, ACTION_CALL_HOME)
+        Verb('Call',   'Call contact',            AD_ATTR_PHONE,    ACTION_CALL),
+        Verb('Info',   'Contact info',            AD_ATTR_NAME,     ACTION_CARD),
+        Verb('Mail',   'Mail contact',            AD_ATTR_MAIL,     ACTION_MAIL),
+        Verb('Cell',   'Call contact cell',       'TEL;TYPE=CELL',  ACTION_CALL),
+        Verb('Home',   'Call contact home',       'TEL;TYPE=HOME',  ACTION_CALL),
+        Verb('Work',   'Call contact work',       'TEL;TYPE=WORK',  ACTION_CALL),
+        COPY_VERB
     ]
-    VERBS = { v.target: v for v in VERB_LIST}
     
     CONTACTS_FILE = "contacts.json"
 
@@ -104,38 +101,35 @@ class Ppl(kp.Plugin):
     def load_vcard_file(self, vcf_file_path):
         self.info(f"Loading contacts file {vcf_file_path}")
         with open(vcf_file_path, "r", encoding='utf-8') as vcf:
-            contact = None
+            contact = Contact()
             for line in vcf:
                 if "BEGIN:VCARD\n" == line:
                     contact = {} #Contact()
-                    contact[self.AD_ATTR_PHONE] = ""
-                    contact[self.AD_ATTR_MOBILE] = ""
-                    contact[self.AD_ATTR_HOME] = ""
                     contact[self.AD_ATTR_MAIL] = ""
                     contact[self.AD_ATTR_TITLE] = ""
                     continue
-                elif "END:VCARD\n" == line:
+                elif line.startswith("END:VCARD"):
                     if contact:
                         self.contacts.append(contact)
-                    contact = None
+                    contact = Contact()
                     continue
 
                 parts = line.strip().rsplit(':', 1)
-                if "FN" == parts[0]:
-                    contact["displayName"] = parts[1]
-                elif parts[0].startswith("TEL;") and parts[0].endswith("WORK"):
-                    contact[self.AD_ATTR_PHONE] = parts[1]
-                elif parts[0].startswith("TEL;") and parts[0].endswith("CELL"):
-                    contact[self.AD_ATTR_MOBILE] = parts[1]
-                elif parts[0].startswith("TEL;") and parts[0].endswith("HOME"):
-                    contact[self.AD_ATTR_HOME] = parts[1]
-                elif parts[0].startswith("EMAIL;"):
+                # tel_match = self.vcf_tel_parser.match(parts[0])
+                # elif tel_match:
+                #     print(f"{tel_match['type']} --> {parts[1]}\n")
+                vcf_field = parts[0]
+                if "FN" == vcf_field:
+                    contact[self.AD_ATTR_NAME] = parts[1]
+                elif vcf_field.startswith("TEL;"):
+                    contact[vcf_field] = parts[1]
+                elif vcf_field.startswith("EMAIL;"):
                     contact[self.AD_ATTR_MAIL] = parts[1]
-                elif parts[0].startswith("TITLE"):
+                elif vcf_field.startswith("TITLE"):
                     contact[self.AD_ATTR_TITLE] += parts[1]
-                elif parts[0].startswith("NICKNAME"):
+                elif vcf_field.startswith("NICKNAME"):
                     contact[self.AD_ATTR_TITLE] += parts[1]
-                elif parts[0].startswith("NOTE"):
+                elif vcf_field.startswith("NOTE"):
                     contact[self.AD_ATTR_TITLE] += parts[1]
 
     def get_vcf_files(self):
@@ -193,48 +187,10 @@ class Ppl(kp.Plugin):
     
     def on_start(self):
         self.settings = self.load_settings()
-        
+        self._debug = False
         self.load_contacts_and_settings()
-        
-        call_mobile_action = self.create_action(
-                name=self.ACTION_CALL_MOBILE,
-                label="Call mobile",
-                short_desc="Call the mobile number",
-                data_bag = self.AD_ATTR_MOBILE)
-
-        call_phone_action = self.create_action(
-                name = self.ACTION_CALL_PHONE,
-                label = "Call phone",
-                short_desc = "Call the phone number",
-                data_bag = self.AD_ATTR_PHONE)
-                
-        call_home_action = self.create_action(
-                name = self.ACTION_CALL_HOME,
-                label = "Call home",
-                short_desc = "Call the home number",
-                data_bag = self.AD_ATTR_HOME)
-                
-        mail_action = self.create_action(
-                name=self.ACTION_MAIL,
-                label="Send mail",
-                short_desc="Send a mail to the contact",
-                data_bag = self.AD_ATTR_MAIL)
-                
-        card_action = self.create_action(
-                name=self.ACTION_CARD,
-                label="Copy contact",
-                short_desc="Copy contact information to clipboard")
-                
-        copy_action = self.create_action(
-                name=self.ACTION_COPY,
-                label="Copy item",
-                short_desc="Copy looked up item")
-                
-        self.set_actions(self.ITEMCAT_CALLEE_M, [call_mobile_action, call_phone_action, call_home_action, copy_action, card_action]) 
-        self.set_actions(self.ITEMCAT_CALLEE_P, [call_phone_action, call_mobile_action, call_home_action, copy_action, card_action]) 
-        self.set_actions(self.ITEMCAT_CALLEE_H, [call_home_action, call_phone_action, call_mobile_action, copy_action, card_action]) 
-        self.set_actions(self.ITEMCAT_MAILEE,   [mail_action, copy_action, card_action]) 
-        self.set_actions(self.ITEMCAT_CONTACT,  [card_action, copy_action]) 
+        self.VERBS = { v.name: v for v in self.VERB_LIST}
+        self.VERB_CONTACT_FIELDS = { v.contact_field: v for v in self.VERB_LIST}
 
     def on_activated(self):
         pass
@@ -246,97 +202,223 @@ class Ppl(kp.Plugin):
         if flags & kp.Events.PACKCONFIG:
             self.load_contacts_and_settings()
             self.on_catalog()
-        
+
     def on_catalog(self):
+        # Creating verbs Info, Mail, Call, Cell, Home, ...
         catalog = [
             self.create_item(
                     category = kp.ItemCategory.REFERENCE,
                     label = self.ITEM_LABEL_PREFIX + v.name,
                     short_desc = v.desc,
-                    target = v.target,
+                    target = v.name,
                     args_hint = kp.ItemArgsHint.REQUIRED,
                     hit_hint = kp.ItemHitHint.NOARGS)
             for v in self.VERB_LIST
         ]
 
         self.set_catalog(catalog)
-       
-    def on_suggest(self, user_input, items_chain):
-        if not items_chain or not user_input:
-            return
+    
+    def suggest_copy(self, current_item, params):
+        contact_no = int(params['contact_no'])
+        contact = self.contacts[contact_no]
+        verb = self.COPY_VERB
 
-        verb = self.VERBS[items_chain[0].target()]
+        if self._debug:
+            self.dbg(f"Suggest copy action(s) for contact {contact['name']} - {repr(contact)} \nparams={repr(params)}")
+
         suggestions = []
 
-        for idx, contact in enumerate(self.contacts):
-            if (not (verb.item in contact) or 
-                not (self.ID_ITEM in contact) or
-                not contact[self.ID_ITEM]):
-                continue
+        target = current_item.target()
+        suggestions.append(self.create_item(
+            category=self.ITEMCAT_COPY,
+            label=f'Copy to clipboard - {target}',
+            short_desc="",
+            target=target,
+            args_hint=kp.ItemArgsHint.FORBIDDEN,
+            hit_hint=kp.ItemHitHint.IGNORE,
+            loop_on_suggest = False,
+            data_bag=kpu.kwargs_encode(verb_name=verb.name, contact_no=contact_no, action=self.ACTION_COPY)))
             
+        self.set_suggestions(suggestions, kp.Match.ANY, kp.Sort.NONE)
+        
+    # Suggestions possible actions for current contacts
+    def suggest_actions(self, current_item, params):
+        contact_no = int(params['contact_no'])
+        contact = self.contacts[contact_no]
+
+        if self._debug:
+            self.dbg(f"Suggest actions for contact {contact['name']} - {repr(contact)}")
+
+        suggestions = []
+        # suggestions.insert(0, item)
+        for key in contact.keys():
+            if not key.startswith("TEL;") or not key in self.VERB_CONTACT_FIELDS:
+                continue
+
+            verb = self.VERB_CONTACT_FIELDS[key]
+            if not verb.contact_field in contact:
+                continue
+
+            target = contact[verb.contact_field]
+            title = contact[self.AD_ATTR_TITLE] if self.AD_ATTR_TITLE in contact else ""
+            suggestions.append(self.create_item(
+                category=self.ITEMCAT_ACTION,
+                label=f'Call {contact[self.ID_NAME]} - {target} ({verb.name})',
+                short_desc=title,
+                target=contact[verb.contact_field],
+                args_hint=kp.ItemArgsHint.FORBIDDEN,
+                hit_hint=kp.ItemHitHint.IGNORE,
+                loop_on_suggest = True,
+                data_bag=kpu.kwargs_encode(verb_name=verb.name, contact_no=contact_no, action=verb.action)))
+
+        if self.AD_ATTR_MAIL in contact:
+            verb = self.VERB_CONTACT_FIELDS[self.AD_ATTR_MAIL]
+            target = contact[verb.contact_field]
+            title = contact[self.AD_ATTR_TITLE] if self.AD_ATTR_TITLE in contact else ""
+            suggestions.append(self.create_item(
+                category=self.ITEMCAT_ACTION,
+                label=f'{verb.name} {contact[self.ID_NAME]} - {target}',
+                short_desc=title,
+                target=target,
+                args_hint=kp.ItemArgsHint.FORBIDDEN,
+                hit_hint=kp.ItemHitHint.IGNORE,
+                loop_on_suggest = True,
+                data_bag=kpu.kwargs_encode(verb_name=verb.name, contact_no=contact_no, action=verb.action)))
+
+        verb = self.VERB_CONTACT_FIELDS[self.AD_ATTR_NAME]
+        target = contact[verb.contact_field]
+        title = contact[self.AD_ATTR_TITLE] if self.AD_ATTR_TITLE in contact else ""
+        suggestions.append(self.create_item(
+            category=self.ITEMCAT_ACTION,
+            label=f'{verb.name} {contact[self.ID_NAME]} - {target}',
+            short_desc=title,
+            target=target,
+            args_hint=kp.ItemArgsHint.FORBIDDEN,
+            hit_hint=kp.ItemHitHint.IGNORE,
+            loop_on_suggest = True,
+            data_bag=kpu.kwargs_encode(verb_name=verb.name, contact_no=contact_no, action=verb.action)))
+
+        suggestions.append(self.create_item(
+            category=self.ITEMCAT_ACTION,
+            label=f'{verb.name} {contact[self.ID_NAME]} - {target}',
+            short_desc=title,
+            target=target,
+            args_hint=kp.ItemArgsHint.FORBIDDEN,
+            hit_hint=kp.ItemHitHint.IGNORE,
+            loop_on_suggest = False,
+            data_bag=kpu.kwargs_encode(verb_name=verb.name, contact_no=contact_no, action=verb.action)))
+
+        self.set_suggestions(suggestions, kp.Match.ANY, kp.Sort.NONE)
+
+    # Suggestions matching contacts with a default action
+    def suggest_contacts(self, current_item, params, user_input):
+        verb = self.VERBS[current_item.target()]
+        if self._debug:
+            self.dbg(f"Suggest contacts matching '{user_input}' for {verb.name}")
+
+
+        # Creating list of "{verb} {name} - {associated-item}"
+        suggestions = []
+        for idx,contact in enumerate(self.contacts):
             if len(suggestions) > 10:
                 break
                 
-            item = contact[verb.item]
-            if not item or not user_input.lower() in contact[self.ID_ITEM].lower():
+            if (not (self.ID_NAME in contact) or not contact[self.ID_NAME]):
+                continue
+            
+            if not user_input.lower() in contact[self.ID_NAME].lower():
+                continue
+
+            item_target = None
+            if (verb.contact_field.startswith("TEL;") and verb.contact_field in contact):
+                item_target = contact[verb.contact_field]
+                item_label = f'Call {contact[self.ID_NAME]} ({verb.name}) - {item_target}'
+            elif (verb.contact_field == self.AD_ATTR_PHONE):
+                for v in self.VERB_LIST:
+                    if v.contact_field.startswith("TEL;") and v.contact_field in contact:
+                        item_target = contact[v.contact_field]
+                        item_label = f'Call {contact[self.ID_NAME]} ({verb.name}) - {item_target}'
+                        break
+                if not item_target:
+                    continue
+            elif verb.contact_field in contact:
+                item_target = contact[verb.contact_field]
+                item_label = f'{verb.name} {contact[self.ID_NAME]} - {item_target}'
+            else:
                 continue
 
             title = contact[self.AD_ATTR_TITLE] if self.AD_ATTR_TITLE in contact else ""
             suggestions.append(self.create_item(
-                category=verb.category,
-                label=f'{verb.name} {contact[self.ID_ITEM]} - {contact[verb.item]}',
-                short_desc=f"{contact[self.AD_ATTR_TITLE]}",
-                target=item,
-                args_hint=kp.ItemArgsHint.FORBIDDEN,
+                category=self.ITEMCAT_CONTACT,
+                label=item_label,
+                short_desc=title,
+                target=item_target,
+                args_hint=kp.ItemArgsHint.ACCEPTED,
                 hit_hint=kp.ItemHitHint.IGNORE,
-                data_bag=kpu.kwargs_encode(verb=verb.target, contact_no=idx)))
+                loop_on_suggest = True,
+                data_bag=kpu.kwargs_encode(verb_name=verb.name, contact_no=idx, action=verb.action)))
 
         self.set_suggestions(suggestions, kp.Match.ANY, kp.Sort.NONE)
 
+    def on_suggest(self, user_input, items_chain):
+        if not items_chain:
+            return
+
+        current_item = items_chain[-1]
+        params = kpu.kwargs_decode(current_item.data_bag()) if current_item.data_bag() else None
+        
+        if current_item.category() == self.ITEMCAT_CONTACT:
+            self.suggest_actions(current_item, params)
+        elif current_item.category() == kp.ItemCategory.REFERENCE and user_input:
+            self.suggest_contacts(current_item, params, user_input)
+        elif current_item.category() == self.ITEMCAT_ACTION:
+            if self._debug:
+                self.dbg(f"Suggesting copy")
+            self.suggest_copy(current_item, params)
+        else:
+            if self._debug:
+                self.dbg(f"on_suggest ignored")
+        
     def do_card_action(self, contact):
         text = f"Name\t{contact[self.AD_ATTR_NAME]}"
         
         if contact[self.AD_ATTR_MAIL]:
             text += f"\nMail\t{contact[self.AD_ATTR_MAIL]}"
-        if contact[self.AD_ATTR_PHONE]:
-            text += f"\nPhone#\t{contact[self.AD_ATTR_PHONE]}"
-        if contact[self.AD_ATTR_MOBILE]:
-            text += f"\nMobile#\t{contact[self.AD_ATTR_MOBILE]}"
-        if contact[self.AD_ATTR_HOME]:
-            text += f"\nHome#\t{contact[self.AD_ATTR_HOME]}"
+        for v in self.VERB_LIST:
+            if v.contact_field.startswith("TEL;") and v.contact_field in contact:
+                text += f"\n{v.name}#\t{contact[v.contact_field]}"
         if contact[self.AD_ATTR_TITLE]:
             text += f"\nTitle\t{contact[self.AD_ATTR_TITLE]}"
 
         kpu.set_clipboard(text)
 
-    def do_call_action(self, contact, verb, protocol):
-        url = protocol.replace("%s", contact[verb.item].replace(" ", ""))
+    def do_call_action(self, contact, selection, protocol):
+        url = protocol.replace("%s", selection.replace(" ", ""))
         kpu.shell_execute(url, args='', working_dir='', verb='', try_runas=True, detect_nongui=True, api_flags=None, terminal_cmd=None, show=-1)
     
     def do_mail_action(self, contact, verb, protocol):
-        url = protocol.replace("%s", contact[verb.item].replace(" ", ""))
+        url = protocol.replace("%s", contact[verb.contact_field].replace(" ", ""))
         kpu.shell_execute(url, args='', working_dir='', verb='', try_runas=True, detect_nongui=True, api_flags=None, terminal_cmd=None, show=-1)
     
     def on_execute(self, item, action):
-        if (not item) or (not item.category()) in self.ITEMCATS:
-            return
-
+        if (not item):
+            return 
+            
+        selection = item.target()
         params = kpu.kwargs_decode(item.data_bag())
-        verb = self.VERBS[params['verb']]
+        verb_name = params['verb_name']
         contact_no = int(params['contact_no'])
         contact = self.contacts[contact_no]
-        
-        action_name = action.name() if action else verb.action
+        verb = self.VERBS[verb_name]
 
-        if action_name == self.ACTION_CALL_MOBILE:
-            self.do_call_action(contact, self.VERBS['CELL'], self.cell_protocol)
-        elif action_name == self.ACTION_CALL_PHONE:
-            self.do_call_action(contact, self.VERBS['CALL'], self.call_protocol)
-        elif action_name == self.ACTION_CALL_HOME:
-            self.do_call_action(contact, self.VERBS['HOME'], self.home_protocol)
-        elif action_name == self.ACTION_MAIL:
+        if self._debug:
+            self.dbg(f"Executing {verb_name}: {selection}, defaultAction: {item.category() == self.ITEMCAT_CONTACT}\n")
+
+        if verb.action == self.ACTION_CALL:
+            self.do_call_action(contact, selection, self.cell_protocol)
+        elif verb.action == self.ACTION_MAIL:
             self.do_mail_action(contact, verb, self.mail_protocol)
-        elif action_name == self.ACTION_CARD:
+        elif verb.action == self.ACTION_CARD:
             self.do_card_action(contact)
-        elif action_name == self.ACTION_COPY:
-            kpu.set_clipboard(contact[verb.item])
+        else:
+            kpu.set_clipboard(selection)

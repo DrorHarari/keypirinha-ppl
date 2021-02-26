@@ -76,6 +76,9 @@ There are many ideas to make Ppl better but it is already very useful in its cur
 
 ## Release Notes ##
 
+**V0.7**
+- Show relevant phone number with the relevant action
+
 **V0.6**
 - Remove support for contacts.json
 - Support copying vCard from predefined remote source (e.g. shared VCF contacts file)
