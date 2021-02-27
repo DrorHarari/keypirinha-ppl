@@ -1,4 +1,14 @@
-#TODO - generalize actions to make it capture different email & phone types
+#
+# Ppl - A Keypirinha plugin for calling/emailing contacts
+#
+# Copyright (c) 2018 Dror Harari
+#
+# Licensed under the MIT license (https://spdx.org/licenses/MIT)
+#
+# TODO
+# - Generalize actions to make it capture different email & phone types
+# - Keep hit history (requires switching from ref. by contact_no to ref by contact name, if unique)
+#
 import keypirinha as kp
 import keypirinha_util as kpu
 import json
