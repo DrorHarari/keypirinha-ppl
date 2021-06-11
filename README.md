@@ -76,6 +76,9 @@ There are many ideas to make Ppl better but it is already very useful in its cur
 
 ## Release Notes ##
 
+**V0.8**
+- Add 'encoding' when adding a vcf file in the plugin configuration (default remains utf-8)
+
 **V0.7**
 - Show relevant phone number with the relevant action
 

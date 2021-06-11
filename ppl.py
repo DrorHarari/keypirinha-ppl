@@ -18,6 +18,7 @@ import os
 import sys
 import datetime
 from shutil import copyfile
+from encodings.aliases import aliases
 
 # Main actions
 # {CALL|HOME|CELL|WORK} - dial a phone of given contact name (for CALL defaults to first number in contact)
@@ -52,14 +53,16 @@ class VcfFile(object):
     source: str
     reload_delta: datetime.timedelta
     next_reload: datetime.datetime
+    encoding: str
 
-    def __init__(self, filename="", source="", reload_delta = 60):
+    def __init__(self, filename="", source="", reload_delta = 60, encoding ="utf-8"):
         self.filename = filename
         self.source = source
         self.reload_delta = reload_delta
+        self.encoding = encoding
         
 class Ppl(kp.Plugin):
-    #vcf_tel_parser = re.compile(r'^TEL;TYPE=(?P<type>[a-zA-Z][a-zA-Z0-9]*)$')
+    #vcf_tel_parser = re.compile(r'^TEL;TYPE=(?P<type>(TYPE=)[a-zA-Z][a-zA-Z0-9]*)$')
 
     # Attributes in the contacts json doc
     AD_ATTR_NAME = 'name'
@@ -108,9 +111,10 @@ class Ppl(kp.Plugin):
     def __init__(self):
         super().__init__()
 
-    def load_vcard_file(self, vcf_file_path):
+    def load_vcard_file(self, vcf_file_path, vcard_file = None):
         self.info(f"Loading contacts file {vcf_file_path}")
-        with open(vcf_file_path, "r", encoding='utf-8') as vcf:
+        encoding = vcard_file.encoding if vcard_file else "utf-8"
+        with open(vcf_file_path, "r", encoding=encoding) as vcf:
             contact = Contact()
             for line in vcf:
                 if "BEGIN:VCARD\n" == line:
@@ -155,7 +159,8 @@ class Ppl(kp.Plugin):
                 if not vcard_file in vcard_file_list:
                     source = self.settings.get_stripped("source", section=section, fallback=None)
                     reload_delta_hours = self.settings.get_int("reload_delta_hours", section=section, fallback=None, min=0)
-                    vcard_files.append(VcfFile(vcard_file, source, reload_delta_hours))
+                    encoding = self.settings.get_stripped("encoding", section=section, fallback='utf-8')
+                    vcard_files.append(VcfFile(vcard_file, source, reload_delta_hours, encoding))
 
         return vcard_files
 
@@ -191,7 +196,10 @@ class Ppl(kp.Plugin):
                     else:
                         self.err(f"Failed to load vCard file '{vcard_file_path}'. File does not exist")
                     continue
-                self.load_vcard_file(vcard_file_path)
+                self.load_vcard_file(vcard_file_path, vcard_file)
+            except LookupError as exc:
+                self.err(f"Failed to load vCard (.vcf) file {vcard_file_path}, {exc}")                
+                self.err(f"Available encodings are: \n{set(aliases.keys())}")
             except Exception as exc:
                 self.err(f"Failed to load vCard (.vcf) file {vcard_file_path}, {exc}")
     
@@ -432,3 +440,17 @@ class Ppl(kp.Plugin):
             self.do_card_action(contact)
         else:
             kpu.set_clipboard(selection)
+
+
+# Defining a trace decorator
+def trace(f):
+    def wrap(*args, **kwargs):
+        print(f"[TRACE] function name: {f.__name__}, arguments: {args}, kwargs: {kwargs}")
+        return f(*args, **kwargs)
+
+    return wrap
+    
+# Example of applying decorator to a function
+@trace
+def double(x):
+    return x * 2
