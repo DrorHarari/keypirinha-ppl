@@ -49,18 +49,33 @@ class Contact(object):
         self.description = description
 
 class VcfFile(object):
+
+    # Default VCF tags
+    VCF_TAG_CELL = "TYPE=CELL"
+    VCF_TAG_HOME = "TYPE=HOME"
+    VCF_TAG_WORK = "TYPE=WORK"
+
     filename: str
     source: str
     reload_delta: datetime.timedelta
     next_reload: datetime.datetime
     encoding: str
+    cell_tag: str
+    home_tag: str
+    work_tag: str
+    custom_tag: bool
 
-    def __init__(self, filename="", source="", reload_delta = 60, encoding ="utf-8"):
+    def __init__(self, filename="", source="", reload_delta=60, encoding=None, \
+            cell_tag=None, home_tag=None, work_tag=None):
         self.filename = filename
         self.source = source
         self.reload_delta = reload_delta
-        self.encoding = encoding
-        
+        self.encoding = encoding if encoding else "utf-8"
+        self.custom_tag = not (not cell_tag and not home_tag and not work_tag)
+        self.cell_tag = cell_tag if cell_tag else self.VCF_TAG_CELL
+        self.home_tag = home_tag if home_tag else self.VCF_TAG_HOME
+        self.work_tag = work_tag if work_tag else self.VCF_TAG_WORK
+
 class Ppl(kp.Plugin):
     #vcf_tel_parser = re.compile(r'^TEL;TYPE=(?P<type>(TYPE=)[a-zA-Z][a-zA-Z0-9]*)$')
 
@@ -100,9 +115,9 @@ class Ppl(kp.Plugin):
         Verb('Call',   'Call contact',            AD_ATTR_PHONE,    ACTION_CALL),
         Verb('Info',   'Contact info',            AD_ATTR_NAME,     ACTION_CARD),
         Verb('Mail',   'Mail contact',            AD_ATTR_MAIL,     ACTION_MAIL),
-        Verb('Cell',   'Call contact cell',       'TEL;TYPE=CELL',  ACTION_CALL),
-        Verb('Home',   'Call contact home',       'TEL;TYPE=HOME',  ACTION_CALL),
-        Verb('Work',   'Call contact work',       'TEL;TYPE=WORK',  ACTION_CALL),
+        Verb('Cell',   'Call contact cell',       f"TEL;{VcfFile.VCF_TAG_CELL}",  ACTION_CALL),
+        Verb('Home',   'Call contact home',       f"TEL;{VcfFile.VCF_TAG_HOME}",  ACTION_CALL),
+        Verb('Work',   'Call contact work',       f"TEL;{VcfFile.VCF_TAG_WORK}",  ACTION_CALL),
         COPY_VERB
     ]
     
@@ -110,10 +125,12 @@ class Ppl(kp.Plugin):
 
     def __init__(self):
         super().__init__()
+        self.debug = True
 
     def load_vcard_file(self, vcf_file_path, vcard_file = None):
         self.info(f"Loading contacts file {vcf_file_path}")
         encoding = vcard_file.encoding if vcard_file else "utf-8"
+
         with open(vcf_file_path, "r", encoding=encoding) as vcf:
             contact = Contact()
             for line in vcf:
@@ -136,6 +153,13 @@ class Ppl(kp.Plugin):
                 if "FN" == vcf_field:
                     contact[self.AD_ATTR_NAME] = parts[1]
                 elif vcf_field.startswith("TEL;"):
+                    if vcard_file.custom_tag:
+                        if vcard_file.cell_tag in vcf_field:
+                            vcf_field = "TEL;"+VcfFile.VCF_TAG_CELL
+                        elif vcard_file.home_tag in vcf_field:
+                            vcf_field = "TEL;"+VcfFile.VCF_TAG_HOME
+                        elif vcard_file.work_tag in vcf_field:
+                            vcf_field = "TEL;"+VcfFile.VCF_TAG_WORK
                     contact[vcf_field] = parts[1]
                 elif vcf_field.startswith("EMAIL;"):
                     contact[self.AD_ATTR_MAIL] = parts[1]
@@ -159,8 +183,11 @@ class Ppl(kp.Plugin):
                 if not vcard_file in vcard_file_list:
                     source = self.settings.get_stripped("source", section=section, fallback=None)
                     reload_delta_hours = self.settings.get_int("reload_delta_hours", section=section, fallback=None, min=0)
-                    encoding = self.settings.get_stripped("encoding", section=section, fallback='utf-8')
-                    vcard_files.append(VcfFile(vcard_file, source, reload_delta_hours, encoding))
+                    encoding = self.settings.get_stripped("encoding", section=section, fallback=None)
+                    cell_tag = self.settings.get_stripped("cell_tag", section=section, fallback=None)
+                    home_tag = self.settings.get_stripped("home_tag", section=section, fallback=None)
+                    work_tag = self.settings.get_stripped("work_tag", section=section, fallback=None)
+                    vcard_files.append(VcfFile(vcard_file, source, reload_delta_hours, encoding, cell_tag, home_tag, work_tag))
 
         return vcard_files
 
@@ -187,6 +214,8 @@ class Ppl(kp.Plugin):
 
         for vcard_file in self.vcard_files:
             vcard_file_path = os.path.join(kp.user_config_dir(), vcard_file.filename)
+            if vcard_file.custom_tag:
+                self.info(f"Loading {vcard_file.filename} with custom VCARD tags")
             try:
                 if vcard_file.source and os.path.exists(vcard_file.source):
                     copyfile(vcard_file.source, vcard_file_path)
@@ -334,7 +363,6 @@ class Ppl(kp.Plugin):
         if self._debug:
             self.dbg(f"Suggest contacts matching '{user_input}' for {verb.name}")
 
-
         # Creating list of "{verb} {name} - {associated-item}"
         suggestions = []
         for idx,contact in enumerate(self.contacts):
@@ -390,8 +418,6 @@ class Ppl(kp.Plugin):
         elif current_item.category() == kp.ItemCategory.REFERENCE and user_input:
             self.suggest_contacts(current_item, params, user_input)
         elif current_item.category() == self.ITEMCAT_ACTION:
-            if self._debug:
-                self.dbg(f"Suggesting copy")
             self.suggest_copy(current_item, params)
         else:
             if self._debug:
