@@ -78,6 +78,7 @@ There are many ideas to make Ppl better but it is already very useful in its cur
 
 **V0.8**
 - Add 'encoding' when adding a vcf file in the plugin configuration (default remains utf-8)
+- Add support for custom VCARD tags like MS Outlook, vcard-version 2.1 which produces tags like `TEL;WORK;VOICE:` rather than the default `TEL;TYPE=WORK:`
 
 **V0.7**
 - Show relevant phone number with the relevant action
