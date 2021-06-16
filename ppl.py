@@ -18,7 +18,7 @@ import os
 import sys
 import datetime
 from shutil import copyfile
-from encodings.aliases import aliases
+import csv
 
 # Main actions
 # {CALL|HOME|CELL|WORK} - dial a phone of given contact name (for CALL defaults to first number in contact)
@@ -49,35 +49,29 @@ class Contact(object):
         self.description = description
 
 class VcfFile(object):
-
-    # Default VCF tags
-    VCF_TAG_CELL = "TYPE=CELL"
-    VCF_TAG_HOME = "TYPE=HOME"
-    VCF_TAG_WORK = "TYPE=WORK"
-
     filename: str
     source: str
     reload_delta: datetime.timedelta
     next_reload: datetime.datetime
-    encoding: str
-    cell_tag: str
-    home_tag: str
-    work_tag: str
-    custom_tag: bool
 
-    def __init__(self, filename="", source="", reload_delta=60, encoding=None, \
-            cell_tag=None, home_tag=None, work_tag=None):
+    def __init__(self, filename="", source="", reload_delta = 60):
         self.filename = filename
         self.source = source
         self.reload_delta = reload_delta
-        self.encoding = encoding if encoding else "utf-8"
-        self.custom_tag = not (not cell_tag and not home_tag and not work_tag)
-        self.cell_tag = cell_tag if cell_tag else self.VCF_TAG_CELL
-        self.home_tag = home_tag if home_tag else self.VCF_TAG_HOME
-        self.work_tag = work_tag if work_tag else self.VCF_TAG_WORK
 
+class CsvFile(object):
+    filename: str
+    source: str
+    reload_delta: datetime.timedelta
+    next_reload: datetime.datetime
+
+    def __init__(self, filename="", source="", reload_delta = 60):
+        self.filename = filename
+        self.source = source
+        self.reload_delta = reload_delta
+        
 class Ppl(kp.Plugin):
-    #vcf_tel_parser = re.compile(r'^TEL;TYPE=(?P<type>(TYPE=)[a-zA-Z][a-zA-Z0-9]*)$')
+    #vcf_tel_parser = re.compile(r'^TEL;TYPE=(?P<type>[a-zA-Z][a-zA-Z0-9]*)$')
 
     # Attributes in the contacts json doc
     AD_ATTR_NAME = 'name'
@@ -109,29 +103,27 @@ class Ppl(kp.Plugin):
     SAMPLE_VCF = r"sample-contacts.vcf"
     PACKAGED_SAMPLE_VCF = r"etc\sample-contacts.vcf"
     VCF_SECTION_PREFIX = "vcf/"
+    CSV_SECTION_PREFIX = "csv/"
     
     COPY_VERB = Verb('Copy',   'Copy contact detail',     '',  ACTION_COPY)
     VERB_LIST = [
         Verb('Call',   'Call contact',            AD_ATTR_PHONE,    ACTION_CALL),
         Verb('Info',   'Contact info',            AD_ATTR_NAME,     ACTION_CARD),
         Verb('Mail',   'Mail contact',            AD_ATTR_MAIL,     ACTION_MAIL),
-        Verb('Cell',   'Call contact cell',       f"TEL;{VcfFile.VCF_TAG_CELL}",  ACTION_CALL),
-        Verb('Home',   'Call contact home',       f"TEL;{VcfFile.VCF_TAG_HOME}",  ACTION_CALL),
-        Verb('Work',   'Call contact work',       f"TEL;{VcfFile.VCF_TAG_WORK}",  ACTION_CALL),
+        Verb('Cell',   'Call contact cell',       'TEL;TYPE=CELL',  ACTION_CALL),
+        Verb('Home',   'Call contact home',       'TEL;TYPE=HOME',  ACTION_CALL),
+        Verb('Work',   'Call contact work',       'TEL;TYPE=WORK',  ACTION_CALL),
         COPY_VERB
     ]
     
-    CONTACTS_FILE = "contacts.json"
+    #CONTACTS_FILE = "contacts.json"
 
     def __init__(self):
         super().__init__()
-        self.debug = True
 
-    def load_vcard_file(self, vcf_file_path, vcard_file = None):
+    def load_vcard_file(self, vcf_file_path):
         self.info(f"Loading contacts file {vcf_file_path}")
-        encoding = vcard_file.encoding if vcard_file else "utf-8"
-
-        with open(vcf_file_path, "r", encoding=encoding) as vcf:
+        with open(vcf_file_path, "r", encoding='utf-8') as vcf:
             contact = Contact()
             for line in vcf:
                 if "BEGIN:VCARD\n" == line:
@@ -153,13 +145,6 @@ class Ppl(kp.Plugin):
                 if "FN" == vcf_field:
                     contact[self.AD_ATTR_NAME] = parts[1]
                 elif vcf_field.startswith("TEL;"):
-                    if vcard_file.custom_tag:
-                        if vcard_file.cell_tag in vcf_field:
-                            vcf_field = "TEL;"+VcfFile.VCF_TAG_CELL
-                        elif vcard_file.home_tag in vcf_field:
-                            vcf_field = "TEL;"+VcfFile.VCF_TAG_HOME
-                        elif vcard_file.work_tag in vcf_field:
-                            vcf_field = "TEL;"+VcfFile.VCF_TAG_WORK
                     contact[vcf_field] = parts[1]
                 elif vcf_field.startswith("EMAIL;"):
                     contact[self.AD_ATTR_MAIL] = parts[1]
@@ -183,11 +168,7 @@ class Ppl(kp.Plugin):
                 if not vcard_file in vcard_file_list:
                     source = self.settings.get_stripped("source", section=section, fallback=None)
                     reload_delta_hours = self.settings.get_int("reload_delta_hours", section=section, fallback=None, min=0)
-                    encoding = self.settings.get_stripped("encoding", section=section, fallback=None)
-                    cell_tag = self.settings.get_stripped("cell_tag", section=section, fallback=None)
-                    home_tag = self.settings.get_stripped("home_tag", section=section, fallback=None)
-                    work_tag = self.settings.get_stripped("work_tag", section=section, fallback=None)
-                    vcard_files.append(VcfFile(vcard_file, source, reload_delta_hours, encoding, cell_tag, home_tag, work_tag))
+                    vcard_files.append(VcfFile(vcard_file, source, reload_delta_hours))
 
         return vcard_files
 
@@ -200,6 +181,7 @@ class Ppl(kp.Plugin):
         self.mail_protocol = self.settings.get_stripped("mail_protocol", "main", self.MAILING_PROTOCOL)
 
         self.vcard_files = self.get_vcf_files()
+        self.csv_files = self.get_csv_files()
         
         # Install a demo vCard file if non is configured (will be ignored once configured)
         if len(self.vcard_files) == 0:
@@ -214,8 +196,6 @@ class Ppl(kp.Plugin):
 
         for vcard_file in self.vcard_files:
             vcard_file_path = os.path.join(kp.user_config_dir(), vcard_file.filename)
-            if vcard_file.custom_tag:
-                self.info(f"Loading {vcard_file.filename} with custom VCARD tags")
             try:
                 if vcard_file.source and os.path.exists(vcard_file.source):
                     copyfile(vcard_file.source, vcard_file_path)
@@ -225,16 +205,62 @@ class Ppl(kp.Plugin):
                     else:
                         self.err(f"Failed to load vCard file '{vcard_file_path}'. File does not exist")
                     continue
-                self.load_vcard_file(vcard_file_path, vcard_file)
-            except LookupError as exc:
-                self.err(f"Failed to load vCard (.vcf) file {vcard_file_path}, {exc}")                
-                self.err(f"Available encodings are: \n{set(aliases.keys())}")
+                self.load_vcard_file(vcard_file_path)
             except Exception as exc:
                 self.err(f"Failed to load vCard (.vcf) file {vcard_file_path}, {exc}")
+
+        for csv_file in self.csv_files:
+            csv_file_path = os.path.join(kp.user_config_dir(), csv_file.filename)
+            try:
+                if csv_file.source and os.path.exists(csv_file.source):
+                    copyfile(csv_file.source, csv_file_path)
+                if not os.path.exists(csv_file_path):
+                    if csv_file.source != None:
+                        self.err(f"Failed to load CSV file '{csv_file_path}'. File does not exist and cannot be copied from {csv_file.source}")
+                    else:
+                        self.err(f"Failed to load CSV file '{csv_file_path}'. File does not exist")
+                    continue
+                self.load_csv_file(csv_file_path)
+            except Exception as exc:
+                self.err(f"Failed to load CSV (.csv) file {csv_file_path}, {exc}")
     
+
+    def load_csv_file(self,csv_file_path):
+	# function to load contact from Outlook-Exported csv-file	
+        self.info(f"Loading contacts file {csv_file_path}")
+        with open(csv_file_path, "r", encoding='utf-8') as f_contacts:
+            csv_contacts = csv.DictReader(f_contacts) 
+            for line in csv_contacts:
+                contact = Contact()
+                contact = {}
+                contact[self.AD_ATTR_NAME] = line.get('Vorname','ERROR_44') + ' ' + line.get('Nachname','ERROR_44')
+                contact[r'TEL;TYPE=WORK'] = line.get(r'Telefon geschäftlich','ERROR_44')
+                contact[r'TEL;TYPE=CELL'] = line.get('Mobiltelefon','ERROR_44')
+                contact[self.AD_ATTR_MAIL] = line.get('E-Mail-Adresse','ERROR_44')
+                self.contacts.append(contact)
+                continue
+                	
+    def get_csv_files(self):
+        csv_files = []
+
+        csv_file_list = self.settings.get_multiline("csv_files", "main", [])
+        for csv_file in csv_file_list:
+            csv_files.append(CsvFile(csv_file))
+
+        for section in self.settings.sections():
+            if section.lower().startswith(self.CSV_SECTION_PREFIX):
+                csv_file = section[len(self.CSV_SECTION_PREFIX):].strip()
+                if not csv_file in csv_file_list:
+                    source = self.settings.get_stripped("source", section=section, fallback=None)
+                    reload_delta_hours = self.settings.get_int("reload_delta_hours", section=section, fallback=None, min=0)
+                    csv_files.append(CsvFile(csv_file, source, reload_delta_hours))
+
+        return csv_files
+
+ 
     def on_start(self):
         self.settings = self.load_settings()
-        self._debug = False
+        self._debug = True
         self.load_contacts_and_settings()
         self.VERBS = { v.name: v for v in self.VERB_LIST}
         self.VERB_CONTACT_FIELDS = { v.contact_field: v for v in self.VERB_LIST}
@@ -363,6 +389,7 @@ class Ppl(kp.Plugin):
         if self._debug:
             self.dbg(f"Suggest contacts matching '{user_input}' for {verb.name}")
 
+
         # Creating list of "{verb} {name} - {associated-item}"
         suggestions = []
         for idx,contact in enumerate(self.contacts):
@@ -418,6 +445,8 @@ class Ppl(kp.Plugin):
         elif current_item.category() == kp.ItemCategory.REFERENCE and user_input:
             self.suggest_contacts(current_item, params, user_input)
         elif current_item.category() == self.ITEMCAT_ACTION:
+            if self._debug:
+                self.dbg(f"Suggesting copy")
             self.suggest_copy(current_item, params)
         else:
             if self._debug:
@@ -466,17 +495,3 @@ class Ppl(kp.Plugin):
             self.do_card_action(contact)
         else:
             kpu.set_clipboard(selection)
-
-
-# Defining a trace decorator
-def trace(f):
-    def wrap(*args, **kwargs):
-        print(f"[TRACE] function name: {f.__name__}, arguments: {args}, kwargs: {kwargs}")
-        return f(*args, **kwargs)
-
-    return wrap
-    
-# Example of applying decorator to a function
-@trace
-def double(x):
-    return x * 2
