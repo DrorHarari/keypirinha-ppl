@@ -1,0 +1,58 @@
+name: Create a new release
+on:
+  workflow_dispatch:
+    inputs:
+      releaseName:
+        description: 'Release name'     
+        required: true
+jobs:
+  release:
+    name: Draft Release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout the repository
+      uses: actions/checkout@v2
+    - name: Get package version
+      run: echo "::set-output name=version::$(cat VERSION)"
+      id: version
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 pytest coverage
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Lint with flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+    - name: Build Keypirinha plugin
+      env:
+        PACKAGE_VERSION: ${{ steps.version.outputs.version }}
+      run: |
+        cd etc
+        python ./build.py
+    - name: Draft release
+      uses: actions/create-release@v1
+      id: create_release
+      with:
+        draft: false
+        prerelease: true
+        release_name:  ${{ github.event.inputs.releaseName }}
+        tag_name: ${{ steps.version.outputs.version }}
+        body: Version ${{ steps.version.outputs.version }} - see changes in README.md
+      env: 
+        GITHUB_TOKEN: ${{ github.token }}
+    - name: Upload plugin Keypirinha artifact
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./etc/ppl.keypirinha-package
+        asset_name: ppl.keypirinha-package
+        asset_content_type: application/zip
