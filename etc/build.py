@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 import zipfile
 
-PACKAGE_NAME = "Ppl"
+PACKAGE_NAME = "ppl"
 FILES = ["ppl.py", "ppl.ini", "ppl.ico", "LICENSE", "etc/make_contacts.py", "etc/sample-contacts.vcf"]
 
 ETC_FOLDER = Path(__file__).parent
