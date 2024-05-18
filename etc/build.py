@@ -21,7 +21,7 @@ try:
         if PACKAGE_VERSION and f == f"{PACKAGE_NAME}.ini":  # Replace {version} in package configuration template
             with open(Path.joinpath(Path('..'), f), "r", encoding="utf-8") as inif:
                 ini = ''.join(inif.readlines())
-                ini = cvtini.replace("{#version#}", PACKAGE_VERSION)
+                ini = ini.replace("{#version#}", PACKAGE_VERSION)
                 zf.writestr(f, ini.encode())
             continue
 
