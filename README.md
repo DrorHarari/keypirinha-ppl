@@ -76,6 +76,9 @@ There are many ideas to make Ppl better but it is already very useful in its cur
 
 ## Release Notes ##
 
+**V0.9**
+- Added distinction between calling using a phone (cellular or otherwise) as CELL-ACTION vs. calling via IM as CALL-ACTION. Also proposed to use `msteams:https://teams.microsoft.com/l/call/0/0?users=%s` for calling using Microsoft Teams  (h.t. @nikotruc)
+
 **V0.8**
 - Can now specify the encoding to use when adding a vcf file in the plugin configuration (default remains utf-8)
 - Can now work with custom VCARD tags like that of MS Outlook, vcard-version 2.1 which produces tags like `TEL;WORK;VOICE:` rather than the default `TEL;TYPE=WORK:`
