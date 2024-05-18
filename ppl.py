@@ -82,16 +82,18 @@ class Ppl(kp.Plugin):
     # Attributes in the contacts json doc
     AD_ATTR_NAME = 'name'
     AD_ATTR_MAIL = 'mail'
-    AD_ATTR_PHONE = 'call'
+    AD_ATTR_PHONE = 'cell'
     AD_ATTR_CELL = 'cell'
     AD_ATTR_HOME = 'home'
     AD_ATTR_TITLE = 'description'
 
     # Default protocol handlers
-    CALLING_PROTOCOL = "tel:%s"
+    CELL_PROTOCOL = "tel:%s"
+    CALLING_PROTOCOL = "callto:%s" #Not working on new Teams version, try using : msteams:https://teams.microsoft.com/l/call/0/0?users=%s
     MAILING_PROTOCOL = "mailto:%s"
 
     # Plugin actions
+    ACTION_CELL = "cell"
     ACTION_CALL = "call"
     ACTION_MAIL = "mail"
     ACTION_CARD = "card"
@@ -112,12 +114,12 @@ class Ppl(kp.Plugin):
     
     COPY_VERB = Verb('Copy',   'Copy contact detail',     '',  ACTION_COPY)
     VERB_LIST = [
-        Verb('Call',   'Call contact',            AD_ATTR_PHONE,    ACTION_CALL),
+        Verb('Call',   'IM Call contact',         AD_ATTR_MAIL,     ACTION_CALL),
         Verb('Info',   'Contact info',            AD_ATTR_NAME,     ACTION_CARD),
         Verb('Mail',   'Mail contact',            AD_ATTR_MAIL,     ACTION_MAIL),
-        Verb('Cell',   'Call contact cell',       f"TEL;{VcfFile.VCF_TAG_CELL}",  ACTION_CALL),
-        Verb('Home',   'Call contact home',       f"TEL;{VcfFile.VCF_TAG_HOME}",  ACTION_CALL),
-        Verb('Work',   'Call contact work',       f"TEL;{VcfFile.VCF_TAG_WORK}",  ACTION_CALL),
+        Verb('Cell',   'Call contact cell',       f"TEL;{VcfFile.VCF_TAG_CELL}",  ACTION_CELL),
+        Verb('Home',   'Call contact home',       f"TEL;{VcfFile.VCF_TAG_HOME}",  ACTION_CELL),
+        Verb('Work',   'Call contact work',       f"TEL;{VcfFile.VCF_TAG_WORK}",  ACTION_CELL),
         COPY_VERB
     ]
     
@@ -195,8 +197,8 @@ class Ppl(kp.Plugin):
         self.contacts = []
 
         self.call_protocol = self.settings.get_stripped("call_protocol", "main", self.CALLING_PROTOCOL)
-        self.cell_protocol = self.settings.get_stripped("cell_protocol", "main", self.CALLING_PROTOCOL)
-        self.home_protocol = self.settings.get_stripped("home_protocol", "main", self.CALLING_PROTOCOL)
+        self.cell_protocol = self.settings.get_stripped("cell_protocol", "main", self.CELL_PROTOCOL)
+        self.home_protocol = self.settings.get_stripped("home_protocol", "main", self.CELL_PROTOCOL)
         self.mail_protocol = self.settings.get_stripped("mail_protocol", "main", self.MAILING_PROTOCOL)
 
         self.vcard_files = self.get_vcf_files()
@@ -436,8 +438,12 @@ class Ppl(kp.Plugin):
 
         kpu.set_clipboard(text)
 
-    def do_call_action(self, contact, selection, protocol):
+    def do_cell_action(self, contact, selection, protocol):
         url = protocol.replace("%s", selection.replace(" ", ""))
+        kpu.shell_execute(url, args='', working_dir='', verb='', try_runas=True, detect_nongui=True, api_flags=None, terminal_cmd=None, show=-1)
+        
+    def do_call_action(self, contact, verb, protocol):
+        url = protocol.replace("%s", contact[verb.contact_field].replace(" ", ""))
         kpu.shell_execute(url, args='', working_dir='', verb='', try_runas=True, detect_nongui=True, api_flags=None, terminal_cmd=None, show=-1)
     
     def do_mail_action(self, contact, verb, protocol):
@@ -458,8 +464,10 @@ class Ppl(kp.Plugin):
         if self._debug:
             self.dbg(f"Executing {verb_name}: {selection}, defaultAction: {item.category() == self.ITEMCAT_CONTACT}\n")
 
-        if verb.action == self.ACTION_CALL:
-            self.do_call_action(contact, selection, self.cell_protocol)
+        if verb.action == self.ACTION_CELL:
+            self.do_cell_action(contact, selection, self.cell_protocol)
+        elif verb.action == self.ACTION_CALL:
+            self.do_call_action(contact, verb, self.call_protocol)
         elif verb.action == self.ACTION_MAIL:
             self.do_mail_action(contact, verb, self.mail_protocol)
         elif verb.action == self.ACTION_CARD:
