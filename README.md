@@ -76,6 +76,10 @@ There are many ideas to make Ppl better but it is already very useful in its cur
 
 ## Release Notes ##
 
+**V0.10**
+- Added support for "CHAT-ACTION" to open a chat with the contact in Microsoft Teams
+`chat_protocol = msteams:https://teams.microsoft.com/l/chat/0/0?users=%s` (@malys)
+
 **V0.9**
 - Added distinction between calling using a phone (cellular or otherwise) as CELL-ACTION vs. calling via IM as CALL-ACTION. Also proposed to use `msteams:https://teams.microsoft.com/l/call/0/0?users=%s` for calling using Microsoft Teams  (h.t. @nikotruc)
 
