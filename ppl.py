@@ -95,6 +95,7 @@ class Ppl(kp.Plugin):
     # Plugin actions
     ACTION_CELL = "cell"
     ACTION_CALL = "call"
+    ACTION_CHAT = "chat"
     ACTION_MAIL = "mail"
     ACTION_CARD = "card"
     ACTION_COPY = "copy"
@@ -115,6 +116,7 @@ class Ppl(kp.Plugin):
     COPY_VERB = Verb('Copy',   'Copy contact detail',     '',  ACTION_COPY)
     VERB_LIST = [
         Verb('Call',   'IM Call contact',         AD_ATTR_MAIL,     ACTION_CALL),
+        Verb('Chat',   'Chat contact',            AD_ATTR_MAIL,     ACTION_CHAT),
         Verb('Info',   'Contact info',            AD_ATTR_NAME,     ACTION_CARD),
         Verb('Mail',   'Mail contact',            AD_ATTR_MAIL,     ACTION_MAIL),
         Verb('Cell',   'Call contact cell',       f"TEL;{VcfFile.VCF_TAG_CELL}",  ACTION_CELL),
@@ -197,6 +199,7 @@ class Ppl(kp.Plugin):
         self.contacts = []
 
         self.call_protocol = self.settings.get_stripped("call_protocol", "main", self.CALLING_PROTOCOL)
+        self.chat_protocol = self.settings.get_stripped("chat_protocol", "main", self.CALLING_PROTOCOL)
         self.cell_protocol = self.settings.get_stripped("cell_protocol", "main", self.CELL_PROTOCOL)
         self.home_protocol = self.settings.get_stripped("home_protocol", "main", self.CELL_PROTOCOL)
         self.mail_protocol = self.settings.get_stripped("mail_protocol", "main", self.MAILING_PROTOCOL)
@@ -468,6 +471,8 @@ class Ppl(kp.Plugin):
             self.do_cell_action(contact, selection, self.cell_protocol)
         elif verb.action == self.ACTION_CALL:
             self.do_call_action(contact, verb, self.call_protocol)
+        elif verb.action == self.ACTION_CHAT:
+            self.do_call_action(contact, verb, self.chat_protocol)
         elif verb.action == self.ACTION_MAIL:
             self.do_mail_action(contact, verb, self.mail_protocol)
         elif verb.action == self.ACTION_CARD:
